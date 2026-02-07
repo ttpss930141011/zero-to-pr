@@ -23,8 +23,8 @@ if (currentPath.startsWith('/en')) {
 			<HeaderLink href={getLocalePath(lang, '/about')}>{t('nav.about')}</HeaderLink>
 		</div>
 		<div class="right-links">
-			<a href={getLocalePath(otherLang, currentPath)} class="lang-switch">
-				{languages[otherLang]}
+			<a href={getLocalePath(otherLang, currentPath)} class="lang-switch" title={languages[otherLang]}>
+				🌐 {languages[otherLang]}
 			</a>
 			<a href="https://github.com/ttpss930141011" target="_blank" class="social-link">
 				<span class="sr-only">GitHub</span>
