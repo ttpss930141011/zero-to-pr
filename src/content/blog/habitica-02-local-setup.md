@@ -78,32 +78,73 @@ cp config.json.example config.json
 
 預設設定就夠用了，除非你本機 3000 port 已經被佔用。
 
-## Step 5: 用 Docker 啟動
+## Step 5: 安裝 Docker
 
-確保你有裝 [Docker](https://docs.docker.com/get-docker/) 和 docker-compose。
+如果你還沒裝 Docker，先裝好：
 
+**Ubuntu/Debian:**
 ```bash
-docker-compose -f docker-compose.dev.yml up -d
+# 安裝 Docker
+curl -fsSL https://get.docker.com | sh
+
+# 把自己加到 docker 群組（免 sudo）
+sudo usermod -aG docker $USER
+
+# 重新登入讓群組生效
 ```
 
+**Mac/Windows:** 下載 [Docker Desktop](https://docs.docker.com/get-docker/)
+
+確認安裝成功：
+```bash
+docker --version
+# Docker version 2x.x.x
+```
+
+## Step 6: 用 Docker 啟動
+
+```bash
+docker compose up -d
+```
+
+> ⚠️ 注意：是 `docker compose`（中間空格），不是舊的 `docker-compose`。如果你用舊版，指令是 `docker-compose up -d`。
+
 這個指令會：
-1. 建立 Habitica server container
-2. 建立 client container  
-3. 建立 MongoDB container
+1. 建立 MongoDB container
+2. 建立 Server container（後端 API）
+3. 建立 Client container（前端 Vue）
 4. 安裝所有依賴
 5. 啟動開發伺服器
 
 第一次跑會比較久（要下載 image 和 npm install），之後就快了。
 
-## Step 6: 確認跑起來了
+## Step 7: 確認跑起來了
 
 ```bash
 docker ps
 ```
 
-應該看到三個 container 在跑。
+應該看到三個 container 在跑：
+- `habitica-mongodb` — MongoDB 資料庫
+- `habitica-server-1` — 後端 API (port 3000)
+- `habitica-client-1` — 前端 Vue (port 5173)
 
-打開 `http://localhost:3000`，應該看到 Habitica 首頁。
+打開瀏覽器：
+- **前端：** `http://localhost:5173` — 你會看到 Habitica 首頁
+- **後端 API：** `http://localhost:3000/api/v3/status` — 確認 API 正常
+
+## Step 8: 常用指令
+
+```bash
+# 停止所有 container
+docker compose down
+
+# 看 log（debug 用）
+docker compose logs -f
+
+# 重新建置（改了 Dockerfile 之後）
+docker compose up -d --build
+```
 
 ## 遇到問題怎麼辦？
 
