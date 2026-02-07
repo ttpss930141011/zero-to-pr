@@ -2,7 +2,7 @@
 title: 'Habitica #02 — 在本地跑起來'
 description: '用 Docker 架設 Habitica 開發環境，為貢獻程式碼做準備'
 pubDate: 'Feb 07 2026'
-heroImage: '/blog-placeholder-1.jpg'
+heroImage: '../../assets/blog-placeholder-2.jpg'
 ---
 
 上一篇我們決定了要對 [Habitica](https://github.com/HabitRPG/habitica) 貢獻。今天來把它跑在本機上。
