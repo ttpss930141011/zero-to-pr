@@ -1,9 +1,8 @@
 ---
-import Layout from '../layouts/BlogPost.astro';
-import { getLangFromUrl, useTranslations } from '../i18n/utils';
+import Layout from '../../layouts/BlogPost.astro';
+import { useTranslations } from '../../i18n/utils';
 
-const lang = getLangFromUrl(Astro.url);
-const t = useTranslations(lang);
+const t = useTranslations('en');
 ---
 
 <Layout

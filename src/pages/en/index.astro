@@ -1,15 +1,14 @@
 ---
-import BaseHead from '../components/BaseHead.astro';
-import Footer from '../components/Footer.astro';
-import Header from '../components/Header.astro';
-import { getLangFromUrl, useTranslations } from '../i18n/utils';
+import BaseHead from '../../components/BaseHead.astro';
+import Footer from '../../components/Footer.astro';
+import Header from '../../components/Header.astro';
+import { useTranslations } from '../../i18n/utils';
 
-const lang = getLangFromUrl(Astro.url);
-const t = useTranslations(lang);
+const t = useTranslations('en');
 ---
 
 <!doctype html>
-<html lang={lang}>
+<html lang="en">
 	<head>
 		<BaseHead title={t('site.title')} description={t('site.description')} />
 		<style>
@@ -71,7 +70,7 @@ const t = useTranslations(lang);
 					<p>{t('home.description')}</p>
 					<p>{t('home.cta.text')}</p>
 				</div>
-				<a href="/blog/" class="cta-button">{t('home.cta.button')}</a>
+				<a href="/en/blog/" class="cta-button">{t('home.cta.button')}</a>
 			</section>
 		</main>
 		<Footer />
