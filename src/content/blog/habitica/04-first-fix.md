@@ -2,7 +2,7 @@
 title: 'Habitica #04 — 第一個 Bug Fix'
 description: '實際動手修復 Issue #10917：手機版 tooltip 覆蓋問題'
 pubDate: 'Feb 07 2026'
-heroImage: '../../assets/blog-placeholder-4.jpg'
+heroImage: '../../../assets/blog-placeholder-4.jpg'
 ---
 
 終於到了最刺激的部分——動手修 bug！

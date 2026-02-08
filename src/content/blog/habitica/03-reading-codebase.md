@@ -2,7 +2,7 @@
 title: 'Habitica #03 — 在 12K Stars 的專案裡找 Bug'
 description: '如何閱讀大型 codebase、追蹤 issue、定位問題程式碼'
 pubDate: 'Feb 07 2026'
-heroImage: '../../assets/blog-placeholder-3.jpg'
+heroImage: '../../../assets/blog-placeholder-3.jpg'
 ---
 
 環境跑起來了，現在要找一個真正的 bug 來修。

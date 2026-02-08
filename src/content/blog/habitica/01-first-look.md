@@ -2,7 +2,7 @@
 title: '第一眼看 Habitica — 一個 12K stars 的開源專案長什麼樣？'
 description: '開始探索 Habitica，一個用 Vue + Node 打造的遊戲化任務管理 App'
 pubDate: 'Feb 07 2026'
-heroImage: '../../assets/blog-placeholder-1.jpg'
+heroImage: '../../../assets/blog-placeholder-1.jpg'
 tags: ['habitica', 'vue', 'open-source', 'beginner']
 ---
 

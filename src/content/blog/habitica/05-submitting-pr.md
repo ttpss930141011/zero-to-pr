@@ -2,7 +2,7 @@
 title: 'Habitica #05 — 提交 PR：驗證修復並送出'
 description: '用瀏覽器 DevTools 重現 Bug、驗證修復、提交第一個 Pull Request'
 pubDate: 'Feb 08 2026'
-heroImage: '../../assets/blog-placeholder-5.jpg'
+heroImage: '../../../assets/blog-placeholder-5.jpg'
 ---
 
 上一篇我們寫好了修復程式碼。這篇來做最後也是最重要的一步——**驗證修復確實有效，然後提交 PR**。
