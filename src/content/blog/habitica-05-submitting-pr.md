@@ -1,192 +1,141 @@
 ---
-title: 'Habitica #05 — 提交 PR：從翻車到成功的真實記錄'
-description: '重現 Bug、截圖驗證、提交 PR 的完整過程——包括所有翻車的部分'
+title: 'Habitica #05 — 提交 PR：驗證修復並送出'
+description: '用瀏覽器 DevTools 重現 Bug、驗證修復、提交第一個 Pull Request'
 pubDate: 'Feb 08 2026'
 heroImage: '../../assets/blog-placeholder-5.jpg'
 ---
 
-上一篇我們寫好了修復程式碼。但「寫好 code」和「提交 PR」之間，還有一段意想不到的艱辛旅程。
+上一篇我們寫好了修復程式碼。這篇來做最後也是最重要的一步——**驗證修復確實有效，然後提交 PR**。
 
-這篇文章記錄了**真實的過程**，包括所有失敗和翻車——因為這才是開源貢獻的真相。
+## 驗證策略
 
-## 目標：精準重現 Bug 並截圖
+提交 PR 不是貼 code 就好。好的 PR 需要：
 
-PR 不是貼個 code diff 就好。好的 PR 需要：
-- **Before/After 截圖**證明 bug 存在，且修復有效
-- **清楚的描述**讓 reviewer 快速理解
+1. **Before 截圖** — 證明 bug 確實存在
+2. **After 截圖** — 證明修復有效
+3. **Desktop 截圖** — 證明沒有破壞原有功能
 
-聽起來簡單？我花了**超過兩小時**才搞定截圖。
+所以我們的計畫是：
 
-## 🚧 翻車 #1：帳號卡在新手教學
+1. 先還原到修復前的程式碼，截 bug 的圖
+2. 套用修復，截修復後的圖
+3. 兩張對比，一目了然
 
-我用 Puppeteer（無頭瀏覽器自動化工具）來截圖。第一次嘗試：
+## Step 1：還原到修復前
 
-```javascript
-// 登入 → 進商店 → 截圖
-await page.goto('http://localhost:5173/shops/market');
-```
-
-截出來的圖：
-
-![卡在角色創建頁面](/images/habitica-05/wrong-avatar-page.png)
-
-**這是角色創建頁面，不是商店！** 😅
-
-原因：測試帳號是在 habitica.com 創的，但我們跑的是本地 Docker 環境——本地資料庫根本沒有這個帳號。登入後被導到新手教學。
-
-**教訓：本地開發環境和線上環境的資料庫是獨立的。**
-
-### 解法：用 API 直接建本地帳號
+因為我們用的是 Vite dev server，改檔案會自動 hot-reload，非常方便：
 
 ```bash
-curl -X POST http://localhost:3000/api/v3/user/auth/local/register \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "username": "bugtester2",
-    "email": "bugtester2@test.com",
-    "password": "Test1234!",
-    "confirmPassword": "Test1234!"
-  }'
+# 保存修復後的版本
+cp website/client/src/components/shops/shopItem.vue shopItem-fixed.vue
 
-# 順便加金幣，讓商店有東西可以買
-curl -X PUT http://localhost:3000/api/v3/user \
-  -H "x-api-user: <USER_ID>" \
-  -H "x-api-key: <API_TOKEN>" \
-  -d '{"stats.gp": 1000}'
+# 還原到修復前（有 bug 的版本）
+git checkout HEAD~1 -- website/client/src/components/shops/shopItem.vue
 ```
 
-## 🚧 翻車 #2：Puppeteer 登入選擇器壞掉
+幾秒後 Vite HMR 自動更新頁面，現在跑的是原始（有 bug 的）程式碼。
 
-```javascript
-await page.$('input[type="email"]');  // null!
-```
+## Step 2：重現 Bug
 
-Habitica 的帳號輸入框 type 是 `text` 不是 `email`，placeholder 是 "Username or Email (case-sensitive)"。選擇器配對失敗。
+打開瀏覽器，進入本地 Habitica 商店 `http://localhost:5173/shops/market`。
 
-**教訓：永遠別假設 HTML 結構，先用 DevTools 或 screenshot 確認。**
+### Desktop 測試
 
-## 🚧 翻車 #3：Mobile 截圖看不到 Bug
+先確認桌面版是正常的。打開 Chrome DevTools（F12），確保視窗寬度大於 768px。
 
-解決登入問題後，我切換到手機視窗大小 (375px)，hover 商品... 沒有 popover 出現。
+把滑鼠 hover 到裝備上：
 
-![Mobile 沒有 popover](/images/habitica-05/mobile-no-popover.png)
+![Desktop popover 正常](/images/habitica-05/desktop-popover.png)
 
-**因為我們的修復已經生效了！** 😂 我忘了自己已經在修復後的程式碼上測試。
+✅ Popover 正常顯示裝備屬性（Rime Reaper Suit, CON +13.5）。滑鼠移開就消失。這是預期行為。
 
-然後我試了 `touchscreen.tap()`，結果直接打開了購買對話框：
+### Mobile 測試
 
-![購買對話框，不是 bug](/images/habitica-05/modal-not-bug.png)
+現在按 **Ctrl+Shift+M** 開啟 DevTools 的 Responsive Mode，切換到手機尺寸（375 x 812）。
 
-這是正常的購買流程，不是 bug 的樣子。
+重新整理頁面，然後 hover（在 responsive mode 裡模擬 touch）到一個裝備上：
 
-**教訓：要截「bug 狀態」的圖，得先還原到 bug 存在的程式碼。**
+![Mobile bug — popover 覆蓋 UI](/images/habitica-05/mobile-bug.png)
 
-## 🚧 翻車 #4：嘗試動態修改 Vue 組件
+🐛 **Bug 重現了！** Popover 浮窗（Leather Armor 屬性表）直接蓋住了 "Market" 標題、"Equipment" 區域，而且在觸控模擬下**這個 popover 不會自動消失**。
 
-我想偷懶，不重建 client，直接在瀏覽器 console 裡改 Vue component 的 computed property：
+這就是 issue #10917 描述的問題：`b-popover` 的 `triggers="hover focus"` 在觸控設備上被 touch 事件觸發，但沒有對應的消失機制。使用者被 popover 擋住，無法正常操作商店。
 
-```javascript
-el.__vue__.$options.computed.shouldShowPopover = function() {
-  return this.showPopover; // 模擬 bug：移除 isMobile 檢查
-};
-el.__vue__.$forceUpdate();
-```
-
-結果 popover 還是 0。**Vue 2 的 computed property 是在初始化時建立的 getter，不能這樣動態替換。**
-
-**教訓：不要試圖 hack 框架的內部機制，走正路比較快。**
-
-## ✅ 最終解法：Vite HMR 大法
-
-既然是 Vite dev server，直接改原始碼，HMR（Hot Module Replacement）會自動更新！
+## Step 3：套用修復並驗證
 
 ```bash
-# 1. 還原到原始（有 bug 的）程式碼
-git show HEAD~1:website/client/src/components/shops/shopItem.vue > shopItem.vue
-
-# 2. Vite 自動 hot-reload，幾秒後頁面更新
-
-# 3. 截圖：Mobile hover → popover 出現 = Bug confirmed!
-
-# 4. 換回修復後的程式碼
-cp shopItem-fixed.vue shopItem.vue
-
-# 5. 再截圖：Mobile hover → 沒有 popover = Fix works!
+# 換回修復後的程式碼
+cp shopItem-fixed.vue website/client/src/components/shops/shopItem.vue
 ```
 
-**終於成功了！**
+Vite HMR 再次自動更新。同樣在 375px 手機模式下，hover 裝備：
 
-## 📸 最終成果
+![Mobile fixed — 沒有 popover](/images/habitica-05/mobile-fixed.png)
 
-### Desktop — Popover 正常顯示（這是預期行為）
+✅ **沒有 popover 了！** UI 乾淨，使用者可以直接點擊裝備進入購買流程。
 
-![Desktop popover](/images/habitica-05/desktop-popover.png)
+### 三種狀態對比
 
-### 🐛 Mobile BUG — Popover 覆蓋 UI
+| | Desktop (>768px) | Mobile BUG (<768px) | Mobile FIX (<768px) |
+|---|---|---|---|
+| Hover 裝備 | ✅ 顯示 popover | 🐛 Popover 蓋住 UI | ✅ 不顯示 popover |
+| 點擊購買 | ✅ 正常 | ❌ 被擋住 | ✅ 直接開啟購買 |
 
-![Mobile bug](/images/habitica-05/mobile-bug.png)
+![三種狀態對比圖](/images/habitica-05/comparison.png)
 
-在手機寬度下，`b-popover` 的 `triggers="hover focus"` 在 touch 時觸發，浮窗直接蓋住 "Market"、"Equipment" 標題和操作區域。在觸控設備上，這個 popover **無法被關閉**。
-
-### ✅ Mobile FIX — 乾淨的 UI
-
-![Mobile fixed](/images/habitica-05/mobile-fixed.png)
-
-修復後，768px 以下不渲染 popover，使用者可以直接點擊物品進入購買流程。
-
-### 對比圖
-
-![三種狀態對比](/images/habitica-05/comparison.png)
-
-## 提交 PR
-
-### Fork & Push
+## Step 4：Fork & Push
 
 ```bash
-# 添加 fork remote
+# 加入你的 fork 作為 remote
 git remote add fork git@github.com:YOUR_USERNAME/habitica.git
 
 # Push 修復分支
 git push fork fix/10917-mobile-shop-popover
 ```
 
-### 簽署 Commit（Verified 綠勾）
+## Step 5：簽署 Commit
 
-GitHub 上有個小細節——commit 旁邊會顯示 "Unverified" 灰標。要變成綠色的 "Verified"，需要簽署 commit。
+GitHub commit 旁邊會顯示 "Unverified" 灰標。要變成綠色的 **Verified** ✅，需要簽署 commit。
 
-最簡單的方式是用 SSH key：
+用 SSH key 最簡單：
 
 ```bash
-# 設定 SSH 簽名
-git config --global user.signingkey ~/.ssh/id_ed25519.pub
+# 1. 設定 SSH 簽名
 git config --global gpg.format ssh
+git config --global user.signingkey ~/.ssh/id_ed25519.pub
 git config --global commit.gpgsign true
 
-# 重新簽署 commit
+# 2. 去 GitHub Settings → SSH and GPG keys → New SSH key
+#    Key type 選 "Signing Key"，貼上你的公鑰
+
+# 3. 重新簽署 commit
 git commit --amend --no-edit -S
 
-# Force push
+# 4. Force push
 git push fork fix/10917-mobile-shop-popover --force
 ```
 
-別忘了去 **GitHub → Settings → SSH and GPG keys** 把你的 SSH key 加為 **Signing Key**。
+## Step 6：建立 Pull Request
 
-### PR Template
-
-Habitica 有自己的 PR template，照著填就好：
+到 GitHub 建立 PR。Habitica 有自己的 [PR template](https://github.com/HabitRPG/habitica/blob/develop/.github/PULL_REQUEST_TEMPLATE.md)，照著填：
 
 ```markdown
 Fixes #10917
 
 ### Changes
 
-On mobile browsers (<768px), the shop item popover activates on
-touch and covers the item card, preventing users from purchasing.
+On mobile browsers (<768px), the shop item popover (triggered by
+`hover focus` in Bootstrap-Vue `b-popover`) activates on touch and
+covers the item card, preventing users from purchasing.
 
-This fix:
-- Adds `isMobile` data property (window.innerWidth < 768)
-- Adds `shouldShowPopover` computed (showPopover && !isMobile)
-- Adds resize listener for device rotation
+This fix adds a mobile check to conditionally disable the popover:
+
+- `isMobile` data property — checks window.innerWidth < 768
+- `shouldShowPopover` computed — returns showPopover && !isMobile
+- `handleResize` method + resize listener for device rotation
+
+Desktop popover behavior is unchanged. On mobile, users tap items
+to open the purchase modal directly.
 
 File changed: `website/client/src/components/shops/shopItem.vue` (+10 lines)
 
@@ -194,40 +143,26 @@ File changed: `website/client/src/components/shops/shopItem.vue` (+10 lines)
 UUID: <your-habitica-user-id>
 ```
 
-### 最終 PR
+**重點：**
+- `Fixes #10917` 會在 PR merge 時自動關閉 issue
+- 附上 Before/After 截圖，讓 reviewer 一目了然
+- UUID 是你的 Habitica 帳號 ID（Settings → API）
 
-🎉 **[PR #15606](https://github.com/HabitRPG/habitica/pull/15606)** 已提交！
+## 🎉 PR 已提交
 
-## 時間線回顧
+**[PR #15606](https://github.com/HabitRPG/habitica/pull/15606)** — 我們的第一個開源 PR！
 
-| 時間 | 事件 |
-|------|------|
-| 開始 | 「截個圖應該很快」|
-| +20min | 帳號卡在新手教學 🤦 |
-| +40min | 登入選擇器壞掉 |
-| +60min | 截到的圖是修復後的狀態 |
-| +80min | 嘗試 hack Vue computed，失敗 |
-| +100min | 用 Vite HMR 終於截到正確的 bug 圖 |
-| +110min | PR 提交成功 🎉 |
+回顧一下整個 Zero to PR 旅程：
 
-**「截個圖而已」花了將近兩小時。** 這就是軟體開發的現實。
+| 篇章 | 做了什麼 |
+|------|---------|
+| #01 First Look | 選定專案，了解 Habitica |
+| #02 Local Setup | Docker 建起本地開發環境 |
+| #03 Reading Codebase | 學會閱讀大型 Vue + Node 專案 |
+| #04 First Fix | 定位 bug、設計方案、寫修復程式碼 |
+| **#05 Submitting PR** | **驗證修復、截圖、提交 PR** |
 
-## 這趟旅程學到的
-
-1. **本地環境 ≠ 線上環境** — 資料庫、帳號、狀態都是獨立的
-2. **不要假設 HTML 結構** — 永遠先檢查再寫選擇器
-3. **測試要在正確的狀態下進行** — 截 bug 圖要用有 bug 的程式碼
-4. **不要試圖走捷徑 hack 框架** — 正路通常更快
-5. **Vite HMR 是你的好朋友** — 改檔案自動更新，debug 神器
-6. **完美主義有代價** — 但精準的截圖讓 PR 更有說服力
-
-## 下一步
-
-等待 maintainer review。
-
-如果被要求修改，記住：**這是正常流程，不是否定你的能力。** 根據 feedback 調整，push 新 commit，然後繼續等。
-
-開源貢獻不是寫完 code 就結束，而是一段持續溝通的過程。
+從「我想貢獻開源但不知道怎麼開始」到「PR 已提交等 review」，這就是完整的流程。
 
 ---
 
